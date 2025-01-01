@@ -1,6 +1,9 @@
 package com.example.lifelinkbloodbank;
 
+import static android.content.ContentValues.TAG;
+
 import android.os.Bundle;
+import android.util.Log;
 import android.util.Patterns;
 import android.view.View;
 import android.widget.ProgressBar;
@@ -21,7 +24,15 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+
+import retrofit2.Call;
+import retrofit2.Callback;
 import retrofit2.Response;
 
 public class Signup extends AppCompatActivity {
@@ -112,25 +123,94 @@ public class Signup extends AppCompatActivity {
     }
 
     private void performSignup() {
-        showLoading();
-
-        String fullName = fullNameInput.getText().toString().trim();
+        String name = fullNameInput.getText().toString().trim();
         String email = emailInput.getText().toString().trim();
         String password = passwordInput.getText().toString().trim();
 
-        SignupRequest request = new SignupRequest(fullName, email, password, "Blood");
+        showLoading();
 
+        SignupRequest signupRequest = new SignupRequest(name, email, password, "BLOOD_BANK");
 
+        RetrofitClient.getInstance()
+                .getApiService()
+                .signup(signupRequest)
+                .enqueue(new Callback<MessageResponse>() {
+                    @Override
+                    public void onResponse(Call<MessageResponse> call,
+                                           Response<MessageResponse> response) {
+                        hideLoading();
+
+                        if (response.isSuccessful() && response.body() != null) {
+                            showSuccessDialog("Registration successful! Please login.");
+                        } else {
+                            handleErrorResponse(response);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<MessageResponse> call, Throwable t) {
+                        hideLoading();
+                        Log.e(TAG, "Signup failed", t);
+                        showError("Network error. Please try again.");
+                    }
+                });
     }
 
-    private void showLoading() {
-        progressBar.setVisibility(View.VISIBLE);
-        signupButton.setEnabled(false);
-    }
+    private void handleErrorResponse(Response<?> response) {
+        try {
+            if (response.errorBody() != null) {
+                String errorBody = response.errorBody().string();
+                Log.e(TAG, "Signup error response: " + errorBody);
 
-    private void hideLoading() {
-        progressBar.setVisibility(View.GONE);
-        signupButton.setEnabled(true);
+                try {
+                    // First try to parse as MessageResponse
+                    Gson gson = new Gson();
+                    MessageResponse errorResponse = gson.fromJson(errorBody, MessageResponse.class);
+
+                    if (errorResponse != null && errorResponse.getMessage() != null) {
+                        // Handle specific error messages
+                        String errorMessage = errorResponse.getMessage();
+                        if (errorMessage.contains("Email already exists")) {
+                            showError("This email is already registered. Please login or use a different email.");
+                        } else if (errorMessage.contains("Invalid email format")) {
+                            emailInput.setError("Please enter a valid email address");
+                            showError("Invalid email format");
+                        } else if (errorMessage.contains("Password too weak")) {
+                            passwordInput.setError("Password must be at least 6 characters");
+                            showError("Password is too weak. Please use at least 6 characters.");
+                        } else {
+                            showError(errorMessage);
+                        }
+                    } else {
+                        showError("Registration failed. Please try again.");
+                    }
+                } catch (JsonSyntaxException e) {
+                    Log.e(TAG, "Error parsing error response", e);
+
+                    // Try to parse as a different error format if your API uses one
+                    try {
+                        JSONObject jsonError = new JSONObject(errorBody);
+                        String message = jsonError.optString("message",
+                                "Registration failed. Please try again.");
+                        showError(message);
+                    } catch (JSONException jsonException) {
+                        showError("An unexpected error occurred. Please try again.");
+                    }
+                }
+            } else {
+                // Handle case where errorBody is null
+                if (response.code() == 409) {
+                    showError("This email is already registered. Please login or use a different email.");
+                } else if (response.code() == 400) {
+                    showError("Invalid input. Please check your details and try again.");
+                } else {
+                    showError("Registration failed. Please try again.");
+                }
+            }
+        } catch (IOException e) {
+            Log.e(TAG, "Error reading error response", e);
+            showError("An unexpected error occurred. Please try again.");
+        }
     }
 
     private void showSuccessDialog(String message) {
@@ -143,6 +223,16 @@ public class Signup extends AppCompatActivity {
                 })
                 .setCancelable(false)
                 .show();
+    }
+
+    private void showLoading() {
+        progressBar.setVisibility(View.VISIBLE);
+        signupButton.setEnabled(false);
+    }
+
+    private void hideLoading() {
+        progressBar.setVisibility(View.GONE);
+        signupButton.setEnabled(true);
     }
 
     private void showError(String message) {
