@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import com.example.lifelinkbloodbank.Login;
 import com.example.lifelinkbloodbank.model.JwtResponse;
 
+
 public class SessionManager {
     private static final String PREF_NAME = "EmergencyAppSession";
     private static final String KEY_TOKEN = "token";
