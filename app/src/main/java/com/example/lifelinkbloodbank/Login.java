@@ -9,12 +9,9 @@ import android.util.Patterns;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 import com.example.lifelinkbloodbank.api.RetrofitClient;
 import com.example.lifelinkbloodbank.model.JwtResponse;
@@ -109,6 +106,9 @@ public class Login extends AppCompatActivity {
 
         LoginRequest loginRequest = new LoginRequest(email, password);
 
+        // Add logging
+        Log.d(TAG, "Attempting login for email: " + email);
+
         RetrofitClient.getInstance()
                 .getApiService()
                 .login(loginRequest)
@@ -117,11 +117,23 @@ public class Login extends AppCompatActivity {
                     public void onResponse(Call<JwtResponse> call, Response<JwtResponse> response) {
                         hideLoading();
 
+                        // Add response logging
+                        Log.d(TAG, "Login response code: " + response.code());
+
                         if (response.isSuccessful() && response.body() != null) {
                             JwtResponse jwtResponse = response.body();
-                            sessionManager.saveAuthResponse(jwtResponse);
-                            navigateToMain();
+                            Log.d(TAG, "Login successful. Token received.");
+
+                            try {
+                                sessionManager.saveAuthResponse(jwtResponse);
+                                Log.d(TAG, "Auth response saved to session");
+                                navigateToMain();
+                            } catch (Exception e) {
+                                Log.e(TAG, "Error saving auth response", e);
+                                showError("Error processing login response");
+                            }
                         } else {
+                            Log.e(TAG, "Login failed with code: " + response.code());
                             handleErrorResponse(response);
                         }
                     }
@@ -129,10 +141,52 @@ public class Login extends AppCompatActivity {
                     @Override
                     public void onFailure(Call<JwtResponse> call, Throwable t) {
                         hideLoading();
-                        Log.e(TAG, "Login failed", t);
-                        showError("Network error. Please try again.");
+                        Log.e(TAG, "Login network call failed", t);
+                        showError("Network error: " + t.getMessage());
                     }
                 });
+    }
+
+    private void handleErrorResponse(Response<?> response) {
+        try {
+            if (response.errorBody() != null) {
+                String errorBody = response.errorBody().string();
+                Log.e(TAG, "Error response body: " + errorBody);
+
+                try {
+                    Gson gson = new Gson();
+                    MessageResponse errorResponse = gson.fromJson(errorBody, MessageResponse.class);
+                    String errorMessage = errorResponse != null && errorResponse.getMessage() != null ?
+                            errorResponse.getMessage() : "Authentication failed";
+                    showError(errorMessage);
+                } catch (JsonSyntaxException e) {
+                    Log.e(TAG, "Error parsing error response", e);
+                    showError("Authentication failed. Please check your credentials.");
+                }
+            } else {
+                showError("Authentication failed. Please try again.");
+            }
+        } catch (IOException e) {
+            Log.e(TAG, "Error reading error response", e);
+            showError("An unexpected error occurred. Please try again.");
+        }
+    }
+
+    private void showError(final String message) {
+        runOnUiThread(() -> {
+            try {
+                new MaterialAlertDialogBuilder(Login.this)
+                        .setTitle("Error")
+                        .setMessage(message)
+                        .setPositiveButton("OK", null)
+                        .setBackground(getResources().getDrawable(R.drawable.dialog_rounded_bg))
+                        .show();
+            } catch (Exception e) {
+                Log.e(TAG, "Error showing error dialog", e);
+                // Fallback to Toast if dialog fails
+                Toast.makeText(Login.this, message, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void showLoading() {
@@ -151,38 +205,9 @@ public class Login extends AppCompatActivity {
         signupText.setEnabled(true);
     }
 
-    private void showError(String message) {
-        new MaterialAlertDialogBuilder(this)
-                .setTitle("Error")
-                .setMessage(message)
-                .setPositiveButton("OK", null)
-                .setBackground(getResources().getDrawable(R.drawable.dialog_rounded_bg))
-                .show();
-    }
 
-    private void handleErrorResponse(Response<?> response) {
-        try {
-            if (response.errorBody() != null) {
-                String errorBody = response.errorBody().string();
-                Log.e(TAG, "Error response: " + errorBody);
 
-                try {
-                    // Try to parse as MessageResponse
-                    Gson gson = new Gson();
-                    MessageResponse errorResponse = gson.fromJson(errorBody, MessageResponse.class);
-                    showError(errorResponse.getMessage());
-                } catch (JsonSyntaxException e) {
-                    // If parsing fails, show generic error
-                    showError("Authentication failed. Please check your credentials.");
-                }
-            } else {
-                showError("Authentication failed. Please try again.");
-            }
-        } catch (IOException e) {
-            Log.e(TAG, "Error parsing error response", e);
-            showError("An unexpected error occurred. Please try again.");
-        }
-    }
+
 
     private void navigateToMain() {
         Intent intent;

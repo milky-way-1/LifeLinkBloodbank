@@ -1,6 +1,5 @@
 package com.example.lifelinkbloodbank.model;
 
-
 public class LoginRequest {
     private String email;
     private String password;
