@@ -4,10 +4,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="8dp"
-    android:layout_marginVertical="4dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="2dp">
+    android:layout_margin="8dp"
+    app:cardElevation="4dp"
+    app:cardCornerRadius="8dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -19,51 +18,35 @@
             android:id="@+id/hospitalName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/black"
             android:textSize="18sp"
             android:textStyle="bold"/>
 
         <TextView
-            android:id="@+id/patientName"
+            android:id="@+id/bloodType"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:textColor="@color/gray_800"
-            android:textSize="16sp"/>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/bloodType"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_blood_type"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="4dp"
-                android:textColor="@color/white"
-                android:textStyle="bold"/>
-
-            <TextView
-                android:id="@+id/volume"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:textColor="@color/gray_600"/>
-
-        </LinearLayout>
+            android:textColor="@color/design_default_color_error"
+            android:textSize="16sp"
+            android:layout_marginTop="8dp"/>
 
         <TextView
-            android:id="@+id/contactNumber"
+            android:id="@+id/address"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"/>
+
+        <TextView
+            android:id="@+id/phoneNumber"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/acceptButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:drawableStart="@drawable/ic_phone"
-            android:drawablePadding="8dp"
-            android:textColor="@color/gray_800"/>
+            android:text="Accept Request"/>
 
     </LinearLayout>
 

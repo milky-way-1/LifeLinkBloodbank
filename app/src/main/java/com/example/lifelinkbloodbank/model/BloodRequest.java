@@ -2,13 +2,15 @@ package com.example.lifelinkbloodbank.model;
 
 public class BloodRequest {
     private String id;
+    private String hospitalId;
     private String hospitalName;
-    private String patientName;
     private String bloodType;
-    private int volume; // in units
     private String contactNumber;
+
+    private String address;
+
     private String status;
-    private String createdAt;
+
 
     // Constructor
     public BloodRequest() {}
@@ -30,13 +32,6 @@ public class BloodRequest {
         this.hospitalName = hospitalName;
     }
 
-    public String getPatientName() {
-        return patientName;
-    }
-
-    public void setPatientName(String patientName) {
-        this.patientName = patientName;
-    }
 
     public String getBloodType() {
         return bloodType;
@@ -44,14 +39,6 @@ public class BloodRequest {
 
     public void setBloodType(String bloodType) {
         this.bloodType = bloodType;
-    }
-
-    public int getVolume() {
-        return volume;
-    }
-
-    public void setVolume(int volume) {
-        this.volume = volume;
     }
 
     public String getContactNumber() {
@@ -62,19 +49,12 @@ public class BloodRequest {
         this.contactNumber = contactNumber;
     }
 
-    public String getStatus() {
-        return status;
+    public String getAddress(){
+        return this.address;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
+    public String getStatus(){
+        return this.status;
     }
 
-    public String getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(String createdAt) {
-        this.createdAt = createdAt;
-    }
 }

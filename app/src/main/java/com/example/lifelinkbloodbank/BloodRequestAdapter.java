@@ -3,6 +3,7 @@ package com.example.lifelinkbloodbank;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -17,17 +18,15 @@ public class BloodRequestAdapter extends ListAdapter<BloodRequest, BloodRequestA
     protected BloodRequestAdapter() {
         super(new DiffUtil.ItemCallback<BloodRequest>() {
             @Override
-            public boolean areItemsTheSame(@NonNull BloodRequest oldItem, @NonNull BloodRequest newItem) {
+            public boolean areItemsTheSame(@NonNull BloodRequest oldItem,
+                                           @NonNull BloodRequest newItem) {
                 return oldItem.getId().equals(newItem.getId());
             }
 
             @Override
-            public boolean areContentsTheSame(@NonNull BloodRequest oldItem, @NonNull BloodRequest newItem) {
-                return oldItem.getHospitalName().equals(newItem.getHospitalName()) &&
-                        oldItem.getPatientName().equals(newItem.getPatientName()) &&
-                        oldItem.getBloodType().equals(newItem.getBloodType()) &&
-                        oldItem.getVolume() == newItem.getVolume() &&
-                        oldItem.getStatus().equals(newItem.getStatus());
+            public boolean areContentsTheSame(@NonNull BloodRequest oldItem,
+                                              @NonNull BloodRequest newItem) {
+                return oldItem.getStatus().equals(newItem.getStatus());
             }
         });
     }
@@ -48,26 +47,30 @@ public class BloodRequestAdapter extends ListAdapter<BloodRequest, BloodRequestA
 
     static class ViewHolder extends RecyclerView.ViewHolder {
         private final TextView hospitalName;
-        private final TextView patientName;
         private final TextView bloodType;
-        private final TextView volume;
-        private final TextView contactNumber;
+        private final TextView address;
+        private final TextView phoneNumber;
+        private final Button acceptButton;
 
-        public ViewHolder(@NonNull View itemView) {
+        ViewHolder(View itemView) {
             super(itemView);
             hospitalName = itemView.findViewById(R.id.hospitalName);
-            patientName = itemView.findViewById(R.id.patientName);
             bloodType = itemView.findViewById(R.id.bloodType);
-            volume = itemView.findViewById(R.id.volume);
-            contactNumber = itemView.findViewById(R.id.contactNumber);
+            address = itemView.findViewById(R.id.address);
+            phoneNumber = itemView.findViewById(R.id.phoneNumber);
+            acceptButton = itemView.findViewById(R.id.acceptButton);
         }
 
-        public void bind(BloodRequest request) {
+        void bind(BloodRequest request) {
             hospitalName.setText(request.getHospitalName());
-            patientName.setText(request.getPatientName());
             bloodType.setText(request.getBloodType());
-            volume.setText(request.getVolume() + " units");
-            contactNumber.setText(request.getContactNumber());
+            address.setText(request.getAddress());
+            phoneNumber.setText(request.getContactNumber());
+
+            acceptButton.setOnClickListener(v -> {
+                // Handle accept click
+                // You might want to add a callback here
+            });
         }
     }
 }
