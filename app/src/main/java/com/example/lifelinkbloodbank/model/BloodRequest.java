@@ -1,60 +1,44 @@
 package com.example.lifelinkbloodbank.model;
 
+import com.google.gson.annotations.SerializedName;
+
+
 public class BloodRequest {
-    private String id;
+    @SerializedName("hospitalId")
     private String hospitalId;
-    private String hospitalName;
-    private String bloodType;
-    private String contactNumber;
 
-    private String address;
+    @SerializedName("patientId")
+    private String patientId;
 
+    @SerializedName("bloodType")
+    private BloodType bloodType;
+
+    @SerializedName("status")
     private String status;
 
 
-    // Constructor
-    public BloodRequest() {}
+    public BloodRequest(String hospitalId, String patientId, BloodType bloodType, String status) {
+        this.hospitalId = hospitalId;
+        this.patientId = patientId;
+        this.bloodType = bloodType;
+        this.status = status;
+    }
 
     // Getters and Setters
-    public String getId() {
-        return id;
+    public String getHospitalId() {
+        return hospitalId;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public String getPatientId() {
+        return patientId;
     }
 
-    public String getHospitalName() {
-        return hospitalName;
-    }
-
-    public void setHospitalName(String hospitalName) {
-        this.hospitalName = hospitalName;
-    }
-
-
-    public String getBloodType() {
+    public BloodType getBloodType() {
         return bloodType;
     }
 
-    public void setBloodType(String bloodType) {
-        this.bloodType = bloodType;
-    }
-
-    public String getContactNumber() {
-        return contactNumber;
-    }
-
-    public void setContactNumber(String contactNumber) {
-        this.contactNumber = contactNumber;
-    }
-
-    public String getAddress(){
-        return this.address;
-    }
-
-    public String getStatus(){
-        return this.status;
+    public String getStatus() {
+        return status;
     }
 
 }
