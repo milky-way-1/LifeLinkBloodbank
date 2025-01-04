@@ -39,20 +39,15 @@ public class BloodBankDashboard extends AppCompatActivity implements BloodReques
     private BloodRequestAdapter adapter;
     private SessionManager sessionManager;
     private final Map<String, Hospital> hospitalCache = new HashMap<>();
-
-    private static final int POLLING_INTERVAL = 10000; // 10 seconds
-    private Handler pollingHandler;
-    private boolean isPollingActive = false;
     private static final String TAG = "BloodBankDashboard";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_blood_bank_dashboard);
-
         setupViews();
         setupServices();
-        setupPolling();
+        // Initial load
         loadRequests();
     }
 
@@ -67,18 +62,13 @@ public class BloodBankDashboard extends AppCompatActivity implements BloodReques
         requestsRecyclerView.setAdapter(adapter);
 
         swipeRefresh.setOnRefreshListener(() -> {
+            showToast("Refreshing requests...");
             loadRequests();
-            swipeRefresh.setRefreshing(false);
         });
     }
 
     private void setupServices() {
         sessionManager = new SessionManager(this);
-    }
-
-    private void setupPolling() {
-        pollingHandler = new Handler(Looper.getMainLooper());
-        startPolling();
     }
 
     private void loadRequests() {
@@ -87,8 +77,8 @@ public class BloodBankDashboard extends AppCompatActivity implements BloodReques
         String bloodBankId = sessionManager.getUserId();
 
         if (token == null || bloodBankId == null) {
-            showError("Authentication error");
-            showLoading(false);
+            showToast("Authentication error");
+            finishLoading();
             return;
         }
 
@@ -102,17 +92,16 @@ public class BloodBankDashboard extends AppCompatActivity implements BloodReques
                         if (response.isSuccessful() && response.body() != null) {
                             processBloodRequests(response.body());
                         } else {
-                            showError("Failed to load requests");
-                            showLoading(false);
+                            showToast("Failed to load requests: " + response.code());
+                            finishLoading();
                             showEmptyState(true);
                         }
                     }
 
                     @Override
                     public void onFailure(Call<List<BloodRequest>> call, Throwable t) {
-                        Log.e(TAG, "Network error", t);
-                        showError("Network error: " + t.getMessage());
-                        showLoading(false);
+                        showToast("Network error: " + t.getMessage());
+                        finishLoading();
                         showEmptyState(true);
                     }
                 });
@@ -121,7 +110,7 @@ public class BloodBankDashboard extends AppCompatActivity implements BloodReques
     private void processBloodRequests(List<BloodRequest> requests) {
         if (requests.isEmpty()) {
             showEmptyState(true);
-            showLoading(false);
+            finishLoading();
             return;
         }
 
@@ -129,6 +118,7 @@ public class BloodBankDashboard extends AppCompatActivity implements BloodReques
         AtomicInteger pendingRequests = new AtomicInteger(requests.size());
 
         for (BloodRequest request : requests) {
+            // Check cache first
             if (hospitalCache.containsKey(request.getHospitalId())) {
                 Hospital hospital = hospitalCache.get(request.getHospitalId());
                 uiRequests.add(createUIRequest(request, hospital));
@@ -136,15 +126,36 @@ public class BloodBankDashboard extends AppCompatActivity implements BloodReques
                     updateAdapter(uiRequests);
                 }
             } else {
-                fetchHospitalDetails(request, hospital -> {
-                    hospitalCache.put(hospital.getId(), hospital);
-                    uiRequests.add(createUIRequest(request, hospital));
-                    if (pendingRequests.decrementAndGet() == 0) {
-                        updateAdapter(uiRequests);
+                // Fetch hospital details if not in cache
+                fetchHospitalDetails(request, new OnHospitalFetchedListener() {
+                    @Override
+                    public void onHospitalFetched(Hospital hospital) {
+                        if (hospital != null) {
+                            uiRequests.add(createUIRequest(request, hospital));
+                        } else {
+                            // Create UI request with placeholder data
+                            BloodRequestUI uiRequest = new BloodRequestUI(request);
+                            uiRequest.setHospitalName("Hospital Details Unavailable");
+                            uiRequest.setAddress("Address Unavailable");
+                            uiRequest.setContactNumber("Contact Unavailable");
+                            uiRequests.add(uiRequest);
+                        }
+
+                        if (pendingRequests.decrementAndGet() == 0) {
+                            updateAdapter(uiRequests);
+                        }
                     }
                 });
             }
         }
+    }
+
+    private void updateAdapter(List<BloodRequestUI> requests) {
+        runOnUiThread(() -> {
+            adapter.submitList(new ArrayList<>(requests));
+            showEmptyState(requests.isEmpty());
+            finishLoading();
+        });
     }
 
     private void fetchHospitalDetails(BloodRequest request, OnHospitalFetchedListener listener) {
@@ -157,35 +168,47 @@ public class BloodBankDashboard extends AppCompatActivity implements BloodReques
                     @Override
                     public void onResponse(Call<Hospital> call, Response<Hospital> response) {
                         if (response.isSuccessful() && response.body() != null) {
-                            listener.onHospitalFetched(response.body());
+                            Hospital hospital = response.body();
+                            hospitalCache.put(hospital.getId(), hospital);
+                            listener.onHospitalFetched(hospital);
+                            showToast("Fetched details for: " + hospital.getHospitalName());
                         } else {
-                            Log.e(TAG, "Failed to fetch hospital details: " + response.code());
+                            showToast("Failed to fetch hospital details");
+                            listener.onHospitalFetched(null);
                         }
                     }
 
                     @Override
                     public void onFailure(Call<Hospital> call, Throwable t) {
-                        Log.e(TAG, "Network error fetching hospital details", t);
+                        showToast("Network error: " + t.getMessage());
+                        listener.onHospitalFetched(null);
                     }
                 });
     }
 
-    private BloodRequestUI createUIRequest(BloodRequest request, Hospital hospital) {
-        BloodRequestUI uiRequest = new BloodRequestUI(request);
-        uiRequest.setHospitalName(hospital.getHospitalName());
-        uiRequest.setAddress(hospital.getFullAddress());
-        uiRequest.setContactNumber(hospital.getPhoneNumber());
-        return uiRequest;
+    private void finishLoading() {
+        showLoading(false);
+        swipeRefresh.setRefreshing(false);
     }
 
-    private void updateAdapter(List<BloodRequestUI> requests) {
-        runOnUiThread(() -> {
-            showEmptyState(false);
-            showLoading(false);
-            adapter.submitList(requests);
-        });
+    // Your existing helper methods
+    private void showLoading(boolean show) {
+        loadingView.setVisibility(show ? View.VISIBLE : View.GONE);
+        swipeRefresh.setEnabled(!show);
     }
 
+    private void showEmptyState(boolean show) {
+        emptyStateView.setVisibility(show ? View.VISIBLE : View.GONE);
+        requestsRecyclerView.setVisibility(show ? View.GONE : View.VISIBLE);
+    }
+
+    private void showToast(String message) {
+        runOnUiThread(() ->
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        );
+    }
+
+    // Request status update methods
     @Override
     public void onAcceptRequest(BloodRequestUI request) {
         updateRequestStatus(request, "ACCEPTED");
@@ -207,90 +230,44 @@ public class BloodBankDashboard extends AppCompatActivity implements BloodReques
                     @Override
                     public void onResponse(Call<BloodRequest> call, Response<BloodRequest> response) {
                         if (response.isSuccessful()) {
-                            showSuccess("Request " + newStatus.toLowerCase());
-                            loadRequests(); // Reload the list
+                            showToast("Request " + newStatus.toLowerCase());
+                            loadRequests();
                         } else {
-                            if (response.code() == 404) {
-                                showError("Request not found");
-                            } else if (response.code() == 400) {
-                                showError("Invalid status update");
-                            } else {
-                                showError("Failed to update request");
-                            }
+                            String error = response.code() == 404 ? "Request not found" :
+                                    response.code() == 400 ? "Invalid status update" :
+                                            "Failed to update request";
+                            showToast(error);
                         }
                     }
 
                     @Override
                     public void onFailure(Call<BloodRequest> call, Throwable t) {
-                        showError("Network error: " + t.getMessage());
+                        showToast("Network error: " + t.getMessage());
                     }
                 });
-    }
-
-    private void showLoading(boolean show) {
-        loadingView.setVisibility(show ? View.VISIBLE : View.GONE);
-        swipeRefresh.setEnabled(!show);
-    }
-
-    private void showEmptyState(boolean show) {
-        emptyStateView.setVisibility(show ? View.VISIBLE : View.GONE);
-        requestsRecyclerView.setVisibility(show ? View.GONE : View.VISIBLE);
-    }
-
-    private void showError(String message) {
-        runOnUiThread(() ->
-                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-        );
-    }
-
-    private void showSuccess(String message) {
-        runOnUiThread(() ->
-                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-        );
-    }
-
-    private void startPolling() {
-        if (!isPollingActive) {
-            isPollingActive = true;
-            pollingHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    if (isPollingActive) {
-                        loadRequests();
-                        pollingHandler.postDelayed(this, POLLING_INTERVAL);
-                    }
-                }
-            }, POLLING_INTERVAL);
-        }
-    }
-
-    private void stopPolling() {
-        isPollingActive = false;
-        if (pollingHandler != null) {
-            pollingHandler.removeCallbacksAndMessages(null);
-        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        startPolling();
         loadRequests();
     }
 
-    @Override
-    protected void onPause() {
-        stopPolling();
-        super.onPause();
+    private BloodRequestUI createUIRequest(BloodRequest request, Hospital hospital) {
+        BloodRequestUI uiRequest = new BloodRequestUI(request);
+        if (hospital != null) {
+            uiRequest.setHospitalName(hospital.getHospitalName());
+            uiRequest.setAddress(hospital.getFullAddress());
+            uiRequest.setContactNumber(hospital.getPhoneNumber());
+        } else {
+            uiRequest.setHospitalName("Hospital Details Unavailable");
+            uiRequest.setAddress("Address Unavailable");
+            uiRequest.setContactNumber("Phone Unavailable");
+        }
+        return uiRequest;
     }
 
-    @Override
-    protected void onDestroy() {
-        stopPolling();
-        super.onDestroy();
-    }
-
-    interface OnHospitalFetchedListener {
+    private interface OnHospitalFetchedListener {
         void onHospitalFetched(Hospital hospital);
     }
 }
