@@ -60,32 +60,14 @@ public class BloodRequestAdapter extends ListAdapter<BloodRequestUI, BloodReques
         private final TextView bloodType;
         private final TextView address;
         private final TextView phoneNumber;
-        private final MaterialButton acceptButton;
-        private final MaterialButton rejectButton;
-
         ViewHolder(View itemView, OnRequestActionListener listener) {
             super(itemView);
             hospitalName = itemView.findViewById(R.id.hospitalName);
             bloodType = itemView.findViewById(R.id.bloodType);
             address = itemView.findViewById(R.id.address);
             phoneNumber = itemView.findViewById(R.id.phoneNumber);
-            acceptButton = itemView.findViewById(R.id.acceptButton);
-            rejectButton = itemView.findViewById(R.id.rejectButton);
 
-            // Set up button click listeners
-            acceptButton.setOnClickListener(v -> {
-                int position = getAdapterPosition();
-                if (position != RecyclerView.NO_POSITION && listener != null) {
-                    listener.onAcceptRequest(getItem(position));
-                }
-            });
 
-            rejectButton.setOnClickListener(v -> {
-                int position = getAdapterPosition();
-                if (position != RecyclerView.NO_POSITION && listener != null) {
-                    listener.onRejectRequest(getItem(position));
-                }
-            });
         }
 
         void bind(BloodRequestUI request) {
@@ -97,8 +79,6 @@ public class BloodRequestAdapter extends ListAdapter<BloodRequestUI, BloodReques
 
             // Handle button visibility based on status
             boolean isPending = request.isPending();
-            acceptButton.setVisibility(isPending ? View.VISIBLE : View.GONE);
-            rejectButton.setVisibility(isPending ? View.VISIBLE : View.GONE);
 
             // Style blood type background
             bloodType.setBackgroundResource(R.drawable.bg_blood_type);
@@ -109,19 +89,6 @@ public class BloodRequestAdapter extends ListAdapter<BloodRequestUI, BloodReques
             phoneNumber.setCompoundDrawablesWithIntrinsicBounds(
                     R.drawable.ic_phone, 0, 0, 0);
 
-            // Style buttons
-            acceptButton.setIcon(ContextCompat.getDrawable(
-                    itemView.getContext(), R.drawable.ic_accept));
-            rejectButton.setIcon(ContextCompat.getDrawable(
-                    itemView.getContext(), R.drawable.ic_reject));
-
-            // Optional: Set button colors
-            acceptButton.setBackgroundTintList(ColorStateList.valueOf(
-                    ContextCompat.getColor(itemView.getContext(), R.color.green)));
-            rejectButton.setStrokeColor(ColorStateList.valueOf(
-                    ContextCompat.getColor(itemView.getContext(), R.color.red_500)));
-            rejectButton.setTextColor(ColorStateList.valueOf(
-                    ContextCompat.getColor(itemView.getContext(), R.color.red_500)));
         }
 
         private BloodRequestUI getItem(int position) {

@@ -173,7 +173,7 @@ public class BloodBankDashboard extends AppCompatActivity implements BloodReques
                             listener.onHospitalFetched(hospital);
                             showToast("Fetched details for: " + hospital.getHospitalName());
                         } else {
-                            showToast("Failed to fetch hospital details");
+                            showToast("Failed to fetch hospital details" + response.code());
                             listener.onHospitalFetched(null);
                         }
                     }
@@ -203,9 +203,6 @@ public class BloodBankDashboard extends AppCompatActivity implements BloodReques
     }
 
     private void showToast(String message) {
-        runOnUiThread(() ->
-                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-        );
     }
 
     // Request status update methods

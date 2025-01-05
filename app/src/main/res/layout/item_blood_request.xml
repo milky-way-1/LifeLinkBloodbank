@@ -57,33 +57,6 @@
             android:drawablePadding="8dp"
             android:textColor="?android:textColorSecondary"/>
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:orientation="horizontal">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/acceptButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:layout_weight="1"
-                android:text="Accept"
-                app:icon="@drawable/ic_accept"/>
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/rejectButton"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_weight="1"
-                android:text="Reject"
-                app:icon="@drawable/ic_reject"/>
-
-        </LinearLayout>
-
     </LinearLayout>
 
 </com.google.android.material.card.MaterialCardView>
